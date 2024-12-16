@@ -1,0 +1,5 @@
+{
+    "Thread %d is running": "Hilo %d está ejecutándose",
+    "Thread % is running": "Hilo % ha estado ejecutándose",
+    "Main thread is running": "Hilo principal está ejecutándose"
+}
