@@ -7,12 +7,18 @@
 #include <chrono>
 #include <iomanip>
 #include <nlohmann/json.hpp>
+#include <locale>
+#include <codecvt>
 
 using json = nlohmann::json;
 
-// std::mutex ThreadSafeLogger::fs_mutex;
+using namespace std;
+
+std::string ThreadSafeLogger::language = "en";  // Define static member
 
 ThreadSafeLogger::ThreadSafeLogger() {
+    std::locale utf8_locale(std::locale(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>());
+    std::locale::global(utf8_locale);
     // Check if the logs directory exists, if not create it
     system("mkdir -p logs");
     system("mkdir -p logs/archived_logs");
@@ -22,15 +28,64 @@ ThreadSafeLogger::ThreadSafeLogger() {
     std::ifstream f("translations.json");
     if (f.is_open()) {
         translations = json::parse(f);
+        if (translations.contains(language)) {
+            current_language_translations = translations[language];
+        } else {
+            std::cerr << "Warning: Language '" << language << "' not found in translations" << std::endl;
+            current_language_translations = translations["en"];  // Fallback to English
+        }
     }
 
     // Check if there is already a file in the logs directory
-    getFileName();
+    createTextFile();
+    translatedLogStream.imbue(utf8_locale);
 }
 
 ThreadSafeLogger::~ThreadSafeLogger() {
-    if (logStream.is_open()) logStream.close();
-    if (translatedLogStream.is_open()) translatedLogStream.close();
+    try {
+        if (logStream.is_open()) {
+            logStream.flush();
+            if (!logStream.good()) {
+                std::cerr << "Error flushing logStream: " << std::strerror(errno) << std::endl;
+            }
+            logStream.close();
+            if (!logStream.good()) {
+                std::cerr << "Error closing logStream: " << std::strerror(errno) << std::endl;
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in logStream cleanup: " << e.what() << std::endl;
+    }
+    
+    if (translatedLogStream.is_open()) {
+        try {
+            translatedLogStream.flush();
+            if (!translatedLogStream.good()) {
+                std::cerr << "translatedLogStream flush error - Stream state: "
+                        << "fail=" << translatedLogStream.fail() 
+                        << " bad=" << translatedLogStream.bad()
+                        << " eof=" << translatedLogStream.eof()
+                        << " UTF conversion error" << std::endl;
+            }
+            translatedLogStream.clear();
+            translatedLogStream.close();
+            if (!translatedLogStream.good()) {
+                std::cerr << "translatedLogStream close error - Stream state: "
+                        << "fail=" << translatedLogStream.fail() 
+                        << " bad=" << translatedLogStream.bad()
+                        << " eof=" << translatedLogStream.eof() << std::endl;
+            }
+        } catch (const std::ios_base::failure& e) {
+            std::cerr << "Stream operation failed: " << e.what() 
+                    << " code: " << e.code() << std::endl;
+        }
+    }
+}
+
+std::wstring ThreadSafeLogger::convertToWString(const std::string& str) {
+    std::wstring_convert<codecvt_utf8<wchar_t>> converter;
+    std::wstring message = converter.from_bytes(str);
+    return message;
 }
 
 std::string ThreadSafeLogger::createTextFile() {
@@ -48,6 +103,8 @@ std::string ThreadSafeLogger::createTextFile() {
         // std::lock_guard<std::mutex> fs_lock(fs_mutex);
         logStream.open("logs/" + filename, std::ios::out | std::ios::app);
         translatedLogStream.open("translated_logs/" + filename, std::ios::out | std::ios::app);
+        translatedLogStream.imbue(std::locale(translatedLogStream.getloc(),
+            new std::codecvt_utf8<wchar_t, 0x10ffff, std::consume_header>()));
 
         if (!logStream.is_open() || !translatedLogStream.is_open()) {
             throw std::runtime_error("Could not create log files");

@@ -1,5 +1,25 @@
 {
-    "Thread %d is running": "Hilo %d está ejecutándose",
-    "Thread % is running": "Hilo % ha estado ejecutándose",
-    "Main thread is running": "Hilo principal está ejecutándose"
-}
+    "metadata": {
+      "version": "1.0",
+      "default_language": "en",
+      "last_updated": "2024-03-20"
+    },
+    "en": {
+      "Thread %d is running": "Thread %d is running",
+      "Error opening file": "Error opening file",
+      "Main thread started": "Main thread started",
+      "Connection established": "Connection established"
+    },
+    "ja": {
+      "Thread %d is running": "スレッド %d が実行中です",
+      "Error opening file": "ファイルを開けませんでした",
+      "Main thread started": "メインスレッドが開始されました",
+      "Connection established": "接続が確立されました"
+    },
+    "es": {
+      "Thread %d is running": "El hilo %d está ejecutándose",
+      "Error opening file": "Error al abrir el archivo",
+      "Main thread started": "Hilo principal iniciado",
+      "Connection established": "Conexión establecida"
+    }
+  }

@@ -6,21 +6,26 @@
 #include <filesystem>
 #include <chrono>
 #include <iomanip>
+#include <locale>
+#include <stdexcept>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
+
 
 class ThreadSafeLogger {
 private:
     std::mutex log_mutex;
     // static std::mutex fs_mutex;  // Add this line for filesystem operations
     json translations;
+    json current_language_translations;
     std::ofstream logStream;
-    std::ofstream translatedLogStream;
+    std::wofstream translatedLogStream;
     static constexpr size_t MAX_FILE_SIZE = 256;
     static constexpr int MAX_ARCHIVED_FILES = 2;
 
 public:
+    static std::string language;
     template<typename... Args>
     static void staticLog(const char* format, Args... args) {
         static ThreadSafeLogger logger;  // Thread-safe initialization
@@ -51,8 +56,8 @@ public:
         
         std::string fmt_str = format;
         std::string translated_fmt = fmt_str;
-        if (translations.contains(fmt_str)) {
-            translated_fmt = translations[fmt_str].get<std::string>();
+        if (current_language_translations.contains(fmt_str)) {
+            translated_fmt = current_language_translations[fmt_str].get<std::string>();
         }
         
         // Build original message
@@ -62,12 +67,15 @@ public:
         // Build translated message
         std::ostringstream translated_stream;
         buildMessage(translated_stream, translated_fmt.c_str(), args...);
+
+        std::wstring translation = convertToWString(translated_stream.str());
+        std::wstring w_timestamp = convertToWString(timestamp); 
         
         // Write to console and files
         std::cout << timestamp << " " << original_stream.str() << std::endl;
         
         logStream << timestamp << " " << original_stream.str() << std::endl;
-        translatedLogStream << timestamp << " " << translated_stream.str() << std::endl;
+        translatedLogStream << w_timestamp << " " << translation << std::endl;
         
         std::string currentFile = getFileName();
         if (checkLogSize(currentFile)) {
@@ -79,6 +87,7 @@ public:
     }
 
 private:
+    std::wstring convertToWString(const std::string& str);
     std::string createTextFile();
     std::string getFileName();
     std::string getCurrentTimestamp();
@@ -97,7 +106,11 @@ private:
             if (*format == '%') {
                 // Found a placeholder, insert the variable
                 stream << first;
-                buildMessage(stream, format + 1, rest...);
+                // Skip the format specifier (like 'd', 's', etc.)
+                if (*(format + 1)) {
+                    format += 2;  // Skip both '%' and the format specifier
+                }
+                buildMessage(stream, format, rest...);
                 return;
             }
             stream << *format;

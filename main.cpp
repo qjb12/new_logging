@@ -10,7 +10,8 @@ void* thread_func(void* arg) {
     return nullptr;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    ThreadSafeLogger::language = argv[1];
     ThreadSafeLogger::staticLog("Main thread is running");
     pthread_t threads[20];
     for (int i = 0; i < 20; ++i) {

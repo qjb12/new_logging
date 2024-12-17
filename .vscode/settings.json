@@ -58,6 +58,13 @@
         "stop_token": "cpp",
         "streambuf": "cpp",
         "thread": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "codecvt": "cpp",
+        "forward_list": "cpp",
+        "map": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "valarray": "cpp",
+        "locale": "cpp"
     }
 }
