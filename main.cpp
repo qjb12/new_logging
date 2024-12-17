@@ -12,12 +12,12 @@ void* thread_func(void* arg) {
 
 int main() {
     ThreadSafeLogger::staticLog("Main thread is running");
-    pthread_t threads[5];
-    for (int i = 0; i < 5; ++i) {
+    pthread_t threads[20];
+    for (int i = 0; i < 20; ++i) {
         pthread_create(&threads[i], nullptr, thread_func, nullptr);
     }
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 20; ++i) {
         pthread_join(threads[i], nullptr);
     }
     return 0;
